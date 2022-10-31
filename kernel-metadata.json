@@ -1,0 +1,19 @@
+{
+  "id": "ianflickinger/monet-maker",
+  "id_no": 31369443,
+  "title": "Monet-Maker",
+  "code_file": "monet-maker.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "competitions/gan-getting-started"
+  ]
+}
