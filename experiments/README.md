@@ -33,3 +33,9 @@ Results-20: Dense spatial dropout distributed through generator feature extracti
 Results-21: No dropout
 
 Results-22: Spatial Dropout in Discriminator as well as in the Generator Base and Up Stack
+
+Results-23: Weighted the adversarial loss over the identity and cycle losses
+
+Results-24: Replaced Concat layers with Add in Unet architecture
+
+Results-25: LeakyReLU in generator base, and reorganized upsample/downsample blocks
