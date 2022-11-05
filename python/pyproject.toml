@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monet_maker"
+version = "0.0.1"
+readme = "README.md"
+description = """
+    Backbone python code for a CycleGAN submission to the
+    Kaggle \"I'm something of a painter myself\" competition."
+"""
+license = {file = "LICENSE"}
+authors = [
+    {name = "Ian Flickinger"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+repository = 'https://github.com/IanFlickinger/monet-maker'
+kaggle = 'https://kaggle.com/ianflickinger/monet-maker'
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+addopts = "--maxfail=1 -rf"

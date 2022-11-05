@@ -12,7 +12,14 @@ Training
  - **Discriminator Dropout** 0.5
  - **Loss Weights** 1, 1, 10
  - **Alternated** No
+
+Outcome
+=========================================================================================
  - **Duration** 1hr 6min
+
+![Monet Generator Evolution](./monet-cycle-gan-evolution.png)
+![Photo Generator Evolution](./photo-cycle-gan-evolution.png)
+![Example Monets](./final-test.png)
 
 Analysis
 =======================================================================================
