@@ -354,14 +354,9 @@ def test_translation(monkeypatch, images, adjustment, expected_images, expected_
     )
 ])
 def test_cutout(monkeypatch, images, adjustment, expected_images, expected_jacobian):
-    # patch random call to return center, then repatch to return size
-    center, size = adjustment
-
-    def uniform_patch(*_):
-        monkeypatch.setattr(tf.random, 'uniform', lambda *_: size)
-        return center
-
-    monkeypatch.setattr(tf.random, 'uniform', uniform_patch)
+    # patch random call to return center, then size
+    vals = list(adjustment)
+    monkeypatch.setattr(tf.random, 'uniform', lambda *_: vals.pop(0))
     # instantiate augmentor with cutout size factor of 1 to simplify the patched randomness
     augmentor = diffaug.Augmentor('cutout', max_cutout_size=1.)
 
