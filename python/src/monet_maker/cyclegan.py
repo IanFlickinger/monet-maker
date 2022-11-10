@@ -1,4 +1,4 @@
-from typing import Callable, Protocol, Iterable, Union, Sized, List, Tuple, Optional, Sequence, Collection, Any, TypeVar
+from typing import Callable, Iterable, Union, List, Tuple, Collection, TypeVar
 
 import tensorflow as tf
 
