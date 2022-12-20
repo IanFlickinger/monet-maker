@@ -1,12 +1,51 @@
+from typing import Tuple, Union
+
+import tensorflow as tf
+import tensorflow_addons as tfa
+
+
+# TODO: restructure unet building to modular framework
+# TODO: finish docstrings
+# TODO: write unit tests
+
+
 def Unet(
-        input_shape=DataConfig.IMAGE_SHAPE,
-        unet_depth=UnetConfig.UNET_DEPTH,
-        base_depth=UnetConfig.BASE_DEPTH,
-        conv_depth=UnetConfig.CONV_DEPTH,
-        dropout_rate=UnetConfig.DROPOUT_RATE,
-        activation=UnetConfig.ACTIVATION,
-        base=UnetConfig.BASE_TYPE,
+        input_shape: Tuple[int],
+        unet_depth: int,
+        base_depth: int,
+        conv_depth: int,
+        dropout_rate: float,
+        activation: Union[tf.keras.activations.Activation, str],
+        base: str,
 ):
+    """Builds a unet-style image generator.
+
+    Constructs a tensorflow keras unet generator based on the supplied parameters. The architecture
+    of the unet generator consists of a downsampling stack, a base stack, and an upsampling stack.
+
+    The downsampling stack consists of a series of downsampling convolution blocks. Each block
+    begins with an optional spatial dropout layer, followed by a series of stride-1 convolutions 
+    to expand the receptive field of each neuron before passing the convolved volume to the stride-2 
+    downsampling convolution. After downsampling, optional instance normalization and activation are
+    applied.
+
+    The upsampling stack consists of a series of upsampling convolution blocks combined with skip 
+    connections from the downsampling stack to reintroduce locality information among other details.
+    Each upsampling block begins with an optional spatial dropout layer, followed by a series of 
+    stride-1 convolutions to expand the receptive field of each neuron before passing the convolved 
+    volume to the stride-2 upsampling transpose convolution. After upsampling, optional instance 
+    normalization and activation are applied. Finally, the upsampling layer and downsampling layer
+    at the same depth of the unet are combined additively.
+
+    The base stack architecture is modular, and can take on a number of variations.
+
+    Args:
+        input_shape (Tuple[int]): tuple shape of image input. Usually of the form (H, W, C).
+        unet_depth (int): number of downsample-upsample pairs in the unet architecture.
+        base_depth (int): stack depth of the unet base
+        conv_depth (int): number of consecutive convolutions at each upsample/downsample stage.
+        dropout_rate (float): 
+    """
     # Input Layer
     inputs = tf.keras.Input(input_shape)
 

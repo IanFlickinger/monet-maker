@@ -1,3 +1,7 @@
+import tensorflow as tf
+import tensorflow_addons as tfa
+
+
 class PatchDiscriminator:
     def build(
             dropout_rate=PatchConfig.DROPOUT_RATE,

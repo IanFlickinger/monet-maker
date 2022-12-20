@@ -1,14 +1,14 @@
 from typing import List, Tuple, Union
 import tensorflow as tf
 
-AVAILABLE_AUGMENTATIONS = [
+AVAILABLE_AUGMENTATIONS = (
     'brightness',
     'color',
     'contrast',
     'saturation',
     'cutout',
     'translation',
-]
+)
 
 
 class Augmentor(tf.keras.layers.Layer):
@@ -58,35 +58,43 @@ class Augmentor(tf.keras.layers.Layer):
         return tf.split(images, len(batches))
 
     def brightness(self, images: tf.Tensor) -> tf.Tensor:
-        # adjust mean pixel brightness
+        # sample adjustment factors
         num_images = tf.shape(images)[0]
         adjustment = tf.random.uniform([num_images, 1, 1, 1], -1., 1.)
         adjustment *= self.max_brightness_adjustment
+
+        # adjust mean pixel brightness
         images = images + adjustment
         return images
 
     def color(self, images: tf.Tensor) -> tf.Tensor:
-        # adjust mean of each color
+        # sample adjustment factors
         num_images = tf.shape(images)[0]
         adjustment = tf.random.uniform([num_images, 1, 1, 3], -1., 1.)
         adjustment *= self.max_color_adjustment
+
+        # adjust mean of each color
         images = images + adjustment
         return images
 
     def contrast(self, images: tf.Tensor) -> tf.Tensor:
-        # adjust variance of pixel brightness
+        # sample adjustment factors
         num_images = tf.shape(images)[0]
         adjustment = tf.random.uniform([num_images, 1, 1, 1], -1., 1.)
         adjustment = 1 + self.max_contrast_adjustment * adjustment
+
+        # adjust variance of pixel brightness
         brightness = tf.math.reduce_mean(images, axis=[-3, -2, -1], keepdims=True)
         images = (images - brightness) * adjustment + brightness
         return images
 
     def saturation(self, images: tf.Tensor) -> tf.Tensor:
-        # adjust variance of each color
+        # sample adjustment factors
         num_images = tf.shape(images)[0]
         adjustment = tf.random.uniform([num_images, 1, 1, 1], -1., 1.)
         adjustment = 1 + self.max_saturation_adjustment * adjustment
+
+        # adjust variance of each color
         avg_colors = tf.math.reduce_mean(images, axis=(1, 2), keepdims=True)
         images = (images - avg_colors) * adjustment + avg_colors
         return images
@@ -138,24 +146,32 @@ class Augmentor(tf.keras.layers.Layer):
         num_images = tf.shape(images)[0]
         image_size = tf.shape(images)[1:3]
 
+        # sample y and x translation
         adjustment = tf.random.uniform([num_images, 2], -1., 1.)
         adjustment *= self.max_translation_adjustment * tf.cast(image_size, tf.float32)
         adjustment = tf.cast(adjustment + 0.5 * tf.sign(adjustment), tf.int32)
         adjustment_y, adjustment_x = tf.split(adjustment, 2, axis=1)
 
+        # calculate row and column indices of translated images
         rows, cols = tf.range(image_size[0])[None], tf.range(image_size[1])[None]
         rows, cols = tf.tile(rows, [num_images, 1]), tf.tile(cols, [num_images, 1])
         rows, cols = rows - adjustment_y, cols - adjustment_x
 
-        # shift indices up by one to separate valid from clipped values
+        # shift indices up by one and clip to separate valid and invalid values
         rows = tf.clip_by_value(rows + 1, 0, image_size[0] + 1)[..., None]
         cols = tf.clip_by_value(cols + 1, 0, image_size[1] + 1)[..., None]
 
         # add padding which will be selected by clipped values
         aug_images = tf.pad(images, [[0, 0], [1, 1], [1, 1], [0, 0]])
+
+        # shift rows
         aug_images = tf.gather_nd(aug_images, rows, batch_dims=1)
+
+        # shift columns
         aug_images = tf.transpose(aug_images, [0, 2, 1, 3])
         aug_images = tf.gather_nd(aug_images, cols, batch_dims=1)
         aug_images = tf.transpose(aug_images, [0, 2, 1, 3])
+
+        # use ensure_shape to allow tf.function to trust the output tensor shape
         images = tf.ensure_shape(aug_images, images.shape)
         return images

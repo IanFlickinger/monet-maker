@@ -1,4 +1,9 @@
+from typing import Callable, Optional
+
 import tensorflow as tf
+
+
+LossFunction = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
 def distribute_build_strategy():
@@ -50,7 +55,10 @@ def distribute_is_tpu(strategy):
     return isinstance(strategy, tf.distribute.TPUStrategy)
 
 
-def distribute_loss(loss_fn, strategy=None):
+def distribute_loss(
+        loss_fn: LossFunction,
+        strategy: Optional[tf.distribute.Strategy] = None
+) -> LossFunction:
     """Wraps a loss function with a strategy-aware reduction.
 
     Args:
@@ -79,7 +87,7 @@ def distribute_loss(loss_fn, strategy=None):
 
     # build reduction wrapper
     @tf.function
-    def reduced_loss(y_true, y_pred):
+    def reduced_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
         # flatten instances
         flat_shape = (-1, tf.math.reduce_prod(y_true.shape[1:]))
         y_true = tf.reshape(y_true, flat_shape)
@@ -89,4 +97,6 @@ def distribute_loss(loss_fn, strategy=None):
         loss_by_instance = loss_fn(y_true, y_pred)
         return tf.reduce_sum(loss_by_instance) / global_batch_size
 
+    # noinspection PyTypeChecker
+    # tf.function wrapper returns a tf.types.experimental.GenericFunction
     return reduced_loss

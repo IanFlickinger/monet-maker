@@ -1,9 +1,16 @@
-def vis_to_image_grid(images):
+import IPython
+import numpy as np
+from PIL import Image
+import tensorflow as tf
+from matplotlib import pyplot as plt
+
+
+def to_image_grid(images):
     """Transforms tensor of stacked image volumes into a single volume of all images
     concatenated together.
 
     This function is not meant to be called directly, as it does not support any variety
-    of tensor shapes. It is called by vis_image_grid, which handles more data validation.
+    of tensor shapes. It is called by image_grid, which handles more data validation.
 
     Args:
         images (tf.Tensor): tensor of stacked image volumes with rank 5 and indexed by
@@ -26,7 +33,7 @@ def vis_to_image_grid(images):
     return images
 
 
-def vis_image_grid(images):
+def image_grid(images):
     """Transforms Tensor of one or more image volumes into a single volume of all images
     concatenated together.
 
@@ -44,7 +51,7 @@ def vis_image_grid(images):
             be indexed by one of the following shapes:
              - (height, width): 1 image
              - (height, width, channel): 1 image
-             - (col, height, width, channel): row of col images
+             - (col, height, width, channel): 1 row of col images
              - (row, col, height, width, channel): grid of row*col images
 
     Returns:
@@ -56,11 +63,11 @@ def vis_image_grid(images):
     if irank == 5:
         # tensor shape: ()
         # concatenate images
-        images = vis_to_image_grid(images)
+        images = to_image_grid(images)
     elif irank == 4:
         # assume horizontal and add empty rows axis before concatenating
         images = images[None]
-        images = vis_to_image_grid(images)
+        images = to_image_grid(images)
     elif irank == 2:
         # add channels axis
         images = images[..., None]
@@ -70,7 +77,7 @@ def vis_image_grid(images):
     return images
 
 
-def vis_to_pil(img):
+def to_pil(img):
     """Transforms input image tensor into a PIL Image object.
 
     Args:
@@ -82,11 +89,11 @@ def vis_to_pil(img):
     """
     img = tf.cast(img * tf.constant([255.]), tf.uint8)
     img = img.numpy()
-    img = PIL.Image.fromarray(img)
+    img = Image.fromarray(img)
     return img
 
 
-def vis_image_gallery(
+def image_gallery(
         images,
         img_titles=None,
         row_titles=None,
@@ -119,13 +126,13 @@ def vis_image_gallery(
 
     # draw images
     for img, ax, t, xt, yt in zip(images, axes, titles, xtitles, ytitles):
-        vis_draw_image(img, ax)
+        draw_image(img, ax)
         ax.set_title(t)
         ax.set_xlabel(xt)
         ax.set_ylabel(yt)
 
 
-def vis_draw_image(img, ax=None):
+def draw_image(img, ax=None):
     if ax is None:
         ax = plt.gca()
 
@@ -139,7 +146,7 @@ def vis_draw_image(img, ax=None):
     return ax
 
 
-def vis_generator_evolution(
+def generator_evolution(
         images,
         filepath=None,
         classes=None,
@@ -160,7 +167,7 @@ def vis_generator_evolution(
         classes (Optional[Iterable[str]]): list of classes corresponding
             to the first index of the images tensor for annotation
         epochs (Union[None, Iterable[int], Iterable[str]]): list of epochs
-            corresponding to the third index of the images tensor for annotaion
+            corresponding to the third index of the images tensor for annotation
         separate_classes (bool): If True, a gap will be left between the classes
         vertical (bool): If True, timeline will extend downward along the visual
             while classes and images are spread along horizontal axis.
@@ -170,7 +177,7 @@ def vis_generator_evolution(
             visual.
     """
     # transform each class into an image grid
-    images = [vis_to_image_grid(img_cls) for img_cls in images]
+    images = [to_image_grid(img_cls) for img_cls in images]
     # add transparency channel if requested
     if add_alpha:
         images = [tf.concat([image, tf.fill((*image.shape[:-1], 1), 1.)], axis=-1) for image in images]
@@ -179,20 +186,22 @@ def vis_generator_evolution(
     for img in images[1:]:
         final_image = tf.concat([
             final_image,
-            tf.fill((DataConfig.IMAGE_SHAPE[0], *img.shape[1:]), 1.),
+            tf.fill(
+                (DataConfig.IMAGE_SHAPE[0], *img.shape[1:]), 1.
+            ),
             img
         ], axis=0)
 
     if filepath:
-        vis_save_image(final_image, filepath)
+        save_image(final_image, filepath)
     if display:
-        vis_display_image(final_image)
+        display_image(final_image)
     return final_image
 
 
-def vis_display_image(img):
-    IPython.display.display(vis_to_pil(img))
+def display_image(img):
+    IPython.display.display(to_pil(img))
 
 
-def vis_save_image(img, filepath):
-    vis_to_pil(img).save(filepath)
+def save_image(img, filepath):
+    to_pil(img).save(filepath)

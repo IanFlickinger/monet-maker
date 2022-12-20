@@ -1,26 +1,39 @@
+from typing import Union, Iterable
+
+import tensorflow as tf
+
+from . import vis
+
+
 class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
     DEFAULT_FILEPATH = './cycle-gan-evolution.png'
 
-    def __init__(self, test_images, classes=None, frequency=1, filepath=DEFAULT_FILEPATH,
-                 separate_classes=True, show_initial=True):
+    def __init__(
+            self,
+            test_images: Union[tf.Tensor, Iterable[tf.Tensor]],
+            classes: Union[None, str, Iterable[str]] = None,
+            frequency: Union[int, Iterable[int]] = 1,
+            filepath: str = DEFAULT_FILEPATH,
+            separate_classes: bool = True,
+            show_initial: bool = True,
+    ):
         """
-        :param test_images: tensor containing the batch of images to test on. If multiple
-        classes are being visualized, test_images should be an iterable containing a batch
-        for each class. Index of batches should match the index of the class in classes
-        for which each batch is to be transformed into.
-        :param classes: None, str, or Iterable[str]. The name(s) of the classes explored by
-        the CycleGAN model. Will each be used as an argument to the __call__ method
-        of the CycleGAN. If None, length of classes is assumed to be 1, and the model will
-        be called with no other arguments.
-        :param frequency: int or Iterable[int]. If single int, test will be run at
-        the end of every epoch such that 'epoch % frequency == 0' evaluates to True. If
-        Iterable, test will be run whenever 'epoch in frequency' evaluates to True. Epoch
-        in this consideration will begin at one - not zero.
-        :param filepath: str. The location at which to save the resulting image.
-        :param separate_classes: bool. If true, each class will be saved as a separate
-        image with the class prepended to the file name.
-        :param show_initial: bool. If true, will include initial predictions of the gan
-        model (before any training occurs).
+        Args:
+            test_images (Union[tf.Tensor, Iterable[tf.Tensor]]): tensor containing the batch of images to test on. If
+                multiple classes are being visualized, test_images should be an iterable containing a batch for each
+                class. Index of batches should match the index of the class in classes for which each batch is to be
+                transformed into.
+            classes (Union[None, str, Iterable[str]]): The name(s) of the classes explored by the CycleGAN model. Will
+                each be used as an argument to the __call__ method of the CycleGAN. If None, length of classes is
+                assumed to be 1, and the model will be called with no other arguments.
+            frequency (Union[int, Iterable[int]]). If single int, test will be run at the end of every epoch such that
+                'epoch % frequency == 0' evaluates to True. If Iterable, test will be run whenever 'epoch in frequency'
+                evaluates to True. Epoch in this consideration will begin at one - not zero.
+            filepath (str): The location at which to save the resulting image.
+            separate_classes (bool): If true, each class will be saved as a separate image with the class prepended to
+                the file name.
+            show_initial (bool): If true, will include initial predictions of the gan model (before any training
+                occurs).
         """
         super().__init__()
 
@@ -30,11 +43,13 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
 
         # images tensor should be of shape (epoch, class, image, height, width[, channels])
         if len(classes) == 1:
+            # test_images is of shape (image, height, width[, channels])
             self.images = test_images[None, None]
         else:
+            # test_images is iterable with tensors
             self.images = tf.stack(test_images)[None]
 
-        # process separate_classes and filepath
+        # generate save paths
         if separate_classes and len(classes) > 1:
             name_index = max(0, filepath.rfind('/') + 1)
             self.filepaths = [filepath[:name_index] + class_name + '-' + filepath[name_index:]
@@ -45,10 +60,12 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
         # assign remaining args to attributes
         self.classes = classes
         self.frequency = frequency
+        self.show_initial = show_initial
 
     def on_train_begin(self, logs=None):
         # collect initial transformations
-        self.images = self._collect_images(self.images)
+        if self.show_initial:
+            self.images = self._collect_images(self.images)
 
     def on_epoch_end(self, epoch, logs=None):
         # check if frequency dictates this epoch to be detailed
@@ -89,9 +106,10 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
         images = tf.transpose(self.images, [1, 2, 0, 3, 4, 5])
 
         if len(self.filepaths) > 1:
-            [vis_generator_evolution(img[None], fp) for img, fp in zip(images, self.filepaths)]
+            [vis.generator_evolution(img[None], fp) for img, fp in zip(images, self.filepaths)]
         else:
-            vis_generator_evolution(images, self.filepaths[0])
+            vis.generator_evolution(images, self.filepaths[0])
+
 
 class AlternateTraining(tf.keras.callbacks.Callback):
     def on_train_batch_begin(self, batch, logs=None):
