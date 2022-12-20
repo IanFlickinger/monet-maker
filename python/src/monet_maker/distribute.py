@@ -6,7 +6,7 @@ import tensorflow as tf
 LossFunction = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 
 
-def distribute_build_strategy():
+def build_strategy():
     """Creates a tf.distribute.Strategy object.
 
     Assesses the calling compute environment, and creates a Strategy object appropriate
@@ -41,7 +41,7 @@ def distribute_build_strategy():
     return tf.distribute.get_strategy()
 
 
-def distribute_is_tpu(strategy):
+def is_tpu(strategy):
     """Evaluates whether the strategy uses a TPU cluster.
 
     Useful for storage interaction, as the TPU cluster will be in a cloud
@@ -55,7 +55,8 @@ def distribute_is_tpu(strategy):
     return isinstance(strategy, tf.distribute.TPUStrategy)
 
 
-def distribute_loss(
+# TODO: evaluate purpose of this function from a package standpoint
+def loss(
         loss_fn: LossFunction,
         strategy: Optional[tf.distribute.Strategy] = None
 ) -> LossFunction:

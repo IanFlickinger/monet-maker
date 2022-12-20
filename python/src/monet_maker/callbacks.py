@@ -5,6 +5,8 @@ import tensorflow as tf
 from . import vis
 
 
+# TODO: class docstrings
+
 class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
     DEFAULT_FILEPATH = './cycle-gan-evolution.png'
 

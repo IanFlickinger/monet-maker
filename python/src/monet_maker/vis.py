@@ -4,6 +4,8 @@ from PIL import Image
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
+CELL_WIDTH = 16.0
+
 
 def to_image_grid(images):
     """Transforms tensor of stacked image volumes into a single volume of all images
@@ -99,12 +101,13 @@ def image_gallery(
         row_titles=None,
         col_titles=None,
         channels=True,
+        cell_width=16.0
 ):
     images = np.array(images)
     nrows, ncols = images.shape[:2]
     images = images.reshape(-1, *images.shape[2:])
 
-    image_size = VisConfig.CELL_WIDTH / ncols
+    image_size = cell_width / ncols
     _, axes = plt.subplots(figsize=(image_size * ncols, image_size * nrows),
                            nrows=nrows, ncols=ncols)
     axes = np.array(axes).ravel()
@@ -176,20 +179,22 @@ def generator_evolution(
         tf.Tensor: a single image volume containing the generator evolution
             visual.
     """
+    # extract image characteristics
+    image_height = images.shape[3]
     # transform each class into an image grid
-    images = [to_image_grid(img_cls) for img_cls in images]
+    grids = [to_image_grid(img_cls) for img_cls in images]
     # add transparency channel if requested
     if add_alpha:
-        images = [tf.concat([image, tf.fill((*image.shape[:-1], 1), 1.)], axis=-1) for image in images]
+        grids = [tf.concat([grid, tf.fill((*grid.shape[:-1], 1), 1.)], axis=-1) for grid in grids]
     # connect all images with gaps between classes
-    final_image = images[0]
-    for img in images[1:]:
+    final_image = grids[0]
+    for grid in grids[1:]:
         final_image = tf.concat([
             final_image,
             tf.fill(
-                (DataConfig.IMAGE_SHAPE[0], *img.shape[1:]), 1.
+                (image_height, *grid.shape[1:]), 1.
             ),
-            img
+            grid
         ], axis=0)
 
     if filepath:

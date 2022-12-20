@@ -8,6 +8,9 @@ LossFunction = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 T = TypeVar('T')
 
 
+# TODO: final docstrings
+
+
 def _ensure_collection(obj: Union[T, Collection[T]], min_length: int = 1) -> Collection[T]:
     """Converts any non-collection into a collection with a minimum length.
 

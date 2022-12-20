@@ -1,9 +1,22 @@
-def data_load(
-        data_path=DataConfig.LOCAL_PATH,
-        data_dirs=DataConfig.DATA_DIRNAMES,
-        batch_size=DataConfig.BATCH_SIZE,
-        buffer_size=DataConfig.BUFFER_SIZE,
-        prefetch=tf.data.AUTOTUNE,
+import os
+from typing import Iterable
+
+import tensorflow as tf
+
+import KaggleDatasets
+
+from . import distribute
+from . import data
+
+
+# TODO: update docstrings
+
+def load(
+        data_path: str,
+        data_dirs: Iterable[str],
+        batch_size: int = 0,
+        buffer_size: int = tf.data.AUTOTUNE,
+        prefetch: int = tf.data.AUTOTUNE,
         seed=None
 ):
     """Load competition dataset.
@@ -38,7 +51,7 @@ def data_load(
     for data_dir in data_dirs:
         # create and configure dataset object
         ds = tf.data.TFRecordDataset(tf.io.gfile.glob(f'{data_dir}/*.tfrec'))
-        ds = ds.map(data_tfrec_to_img)
+        ds = ds.map(data.tfrec_to_img)
         ds = ds.prefetch(prefetch).shuffle(buffer_size, seed=seed).repeat()
         if batch_size > 0:
             ds = ds.batch(batch_size)
@@ -51,12 +64,12 @@ def data_load(
     return dataset
 
 
-def data_load_sample(
-        data_path=DataConfig.LOCAL_PATH,
-        data_dirs=DataConfig.DATA_DIRNAMES,
-        sample_size=DataConfig.BATCH_SIZE,
-        buffer_size=DataConfig.BUFFER_SIZE,
-        seed=None
+def load_sample(
+        data_path: str,
+        data_dirs: Iterable[str],
+        sample_size: int = 1,
+        buffer_size: int = tf.data.AUTOTUNE,
+        seed: int = None
 ):
     """Load a sample from the competition dataset.
 
@@ -85,7 +98,7 @@ def data_load_sample(
     for data_dir in data_dirs:
         # create and configure dataset object
         ds = tf.data.TFRecordDataset(tf.io.gfile.glob(f'{data_dir}/*.tfrec'))
-        ds = ds.map(data_tfrec_to_img)
+        ds = ds.map(tfrec_to_img)
         ds = ds.shuffle(buffer_size, seed=seed)
         ds = ds.batch(sample_size)
         # sample and append to running list
@@ -95,7 +108,7 @@ def data_load_sample(
     return tuple(samples)
 
 
-def data_tfrec_to_img(tfrec):
+def tfrec_to_img(tfrec, rgb_max: int = 255):
     """Translate a tf record containing a jpeg into the image tensor.
 
     Args:
@@ -110,10 +123,10 @@ def data_tfrec_to_img(tfrec):
         'image': tf.io.FixedLenFeature([], tf.string)
     })['image']
     decoded_image = tf.io.decode_jpeg(encoded_image)
-    return tf.cast(decoded_image, tf.float32) / DataConfig.IMAGE_MAX_RGB
+    return tf.cast(decoded_image, tf.float32) / rgb_max
 
 
-def data_get_path(strategy=None):
+def get_path(database_name: str, local_path: str, strategy=None):
     """Retrieves the database path
 
     Args:
@@ -126,6 +139,6 @@ def data_get_path(strategy=None):
     """
     if strategy is None:
         strategy = tf.distribute.get_strategy()
-    if distribute_is_tpu(strategy):
-        return KaggleDatasets().get_gcs_path(DataConfig.DB_NAME)
-    return DataConfig.LOCAL_PATH
+    if distribute.is_tpu(strategy):
+        return KaggleDatasets().get_gcs_path(database_name)
+    return local_path

@@ -10,6 +10,8 @@ AVAILABLE_AUGMENTATIONS = (
     'translation',
 )
 
+# TODO: add docstrings
+
 
 class Augmentor(tf.keras.layers.Layer):
     def __init__(

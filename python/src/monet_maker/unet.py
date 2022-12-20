@@ -15,7 +15,7 @@ def Unet(
         base_depth: int,
         conv_depth: int,
         dropout_rate: float,
-        activation: Union[tf.keras.activations.Activation, str],
+        activation: Union[tf.keras.layers.Activation, str],
         base: str,
 ):
     """Builds a unet-style image generator.
@@ -44,7 +44,9 @@ def Unet(
         unet_depth (int): number of downsample-upsample pairs in the unet architecture.
         base_depth (int): stack depth of the unet base
         conv_depth (int): number of consecutive convolutions at each upsample/downsample stage.
-        dropout_rate (float): 
+        dropout_rate (float):
+        activation (Union[tf.keras.layers.Activation, str]):
+        base (str):
     """
     # Input Layer
     inputs = tf.keras.Input(input_shape)
@@ -102,7 +104,7 @@ def Unet(
     return unet
 
 
-# TODO: put in primary config for easy experimentation
+# TODO: modularize for easy reconfiguration
 def unet_filters_at_level(level):
     return min(32 * (2 ** level), 512)
 
@@ -113,7 +115,7 @@ def unet_downsample(
         depth=3,
         kernel_size=3,
         sample_rate=2,
-        dropout_rate=UnetConfig.DROPOUT_RATE,
+        dropout_rate=0,
         normalize=True,
         activation='leaky_relu',
         kernel_initializer='glorot_uniform',
@@ -159,7 +161,7 @@ def unet_upsample(
         depth=3,
         kernel_size=3,
         sample_rate=2,
-        dropout_rate=UnetConfig.DROPOUT_RATE,
+        dropout_rate=0,
         normalize=True,
         activation='leaky_relu',
         kernel_initializer='glorot_uniform',
@@ -203,8 +205,8 @@ def unet_residual_base(
         base_shape,
         stack_depth,
         kernel_size=3,
-        dropout_rate=UnetConfig.DROPOUT_RATE,
-        activation=UnetConfig.ACTIVATION,
+        dropout_rate=0,
+        activation='leaky_relu',
         compression_factor=0.5,
         preactivation=True,
         bottleneck=True,
