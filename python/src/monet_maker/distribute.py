@@ -3,9 +3,6 @@ from typing import Callable, Optional
 import tensorflow as tf
 
 
-LossFunction = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
-
-
 def build_strategy():
     """Creates a tf.distribute.Strategy object.
 
@@ -57,9 +54,9 @@ def is_tpu(strategy):
 
 # TODO: evaluate purpose of this function from a package standpoint
 def loss(
-        loss_fn: LossFunction,
+        loss_fn: Callable[[tf.Tensor, tf.Tensor], tf.Tensor],
         strategy: Optional[tf.distribute.Strategy] = None
-) -> LossFunction:
+) -> Callable[[tf.Tensor, tf.Tensor], tf.Tensor]:
     """Wraps a loss function with a strategy-aware reduction.
 
     Args:
