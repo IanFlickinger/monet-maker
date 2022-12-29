@@ -59,3 +59,6 @@ git-ignored/
 
 # Model files can be large...
 experiments/*/models/
+
+# Kaggle metadata
+kaggle/kernel-metadata.json
