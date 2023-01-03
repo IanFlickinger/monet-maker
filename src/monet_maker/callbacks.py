@@ -1,3 +1,14 @@
+"""Useful callbacks for training.
+
+The contained callbacks implement the tensorflow keras Callback interface.
+
+TODO:
+ - Replace AlternateTraining callback functionality with a more efficient
+   approach
+ - Finalize tf.function implementation of VisualizeCycleGanEvolution's
+   _collect_images member or reformat to remove need for arguments and return
+"""
+
 from typing import Union, Iterable
 
 import tensorflow as tf
@@ -5,9 +16,26 @@ import tensorflow as tf
 from . import vis
 
 
-# TODO: class docstrings
-
 class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
+    """Generates an image depicting the progress of CycleGAN training.
+
+    Args:
+        test_images (Union[tf.Tensor, Iterable[tf.Tensor]]): tensor containing the batch of images to test on. If
+            multiple classes are being visualized, test_images should be an iterable containing a batch for each
+            class. Index of batches should match the index of the class in classes for which each batch is to be
+            transformed into.
+        classes (Union[None, str, Iterable[str]]): The name(s) of the classes explored by the CycleGAN model. Will
+            each be used as an argument to the __call__ method of the CycleGAN. If None, length of classes is
+            assumed to be 1, and the model will be called with no other arguments.
+        frequency (Union[int, Iterable[int]]). If single int, test will be run at the end of every epoch such that
+            'epoch % frequency == 0' evaluates to True. If Iterable, test will be run whenever 'epoch in frequency'
+            evaluates to True. Epoch in this consideration will begin at one - not zero.
+        filepath (str): The location at which to save the resulting image.
+        separate_classes (bool): If true, each class will be saved as a separate image with the class prepended to
+            the file name.
+        show_initial (bool): If true, will include initial predictions of the gan model (before any training
+            occurs).
+    """
     DEFAULT_FILEPATH = './cycle-gan-evolution.png'
 
     def __init__(
@@ -19,24 +47,6 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
             separate_classes: bool = True,
             show_initial: bool = True,
     ):
-        """
-        Args:
-            test_images (Union[tf.Tensor, Iterable[tf.Tensor]]): tensor containing the batch of images to test on. If
-                multiple classes are being visualized, test_images should be an iterable containing a batch for each
-                class. Index of batches should match the index of the class in classes for which each batch is to be
-                transformed into.
-            classes (Union[None, str, Iterable[str]]): The name(s) of the classes explored by the CycleGAN model. Will
-                each be used as an argument to the __call__ method of the CycleGAN. If None, length of classes is
-                assumed to be 1, and the model will be called with no other arguments.
-            frequency (Union[int, Iterable[int]]). If single int, test will be run at the end of every epoch such that
-                'epoch % frequency == 0' evaluates to True. If Iterable, test will be run whenever 'epoch in frequency'
-                evaluates to True. Epoch in this consideration will begin at one - not zero.
-            filepath (str): The location at which to save the resulting image.
-            separate_classes (bool): If true, each class will be saved as a separate image with the class prepended to
-                the file name.
-            show_initial (bool): If true, will include initial predictions of the gan model (before any training
-                occurs).
-        """
         super().__init__()
 
         # ensure classes is Iterable[str]
@@ -78,7 +88,7 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
         ):
             self.images = self._collect_images(self.images)
 
-    #     @tf.function # TODO: either finish tensorflowizing this, or reformat to need no arguments or returns
+    #     @tf.function
     def _collect_images(self, images):
         # initialize new tensor with shape (0, height, width[, channels])
         new_images = tf.zeros([0, *images.shape[3:]], dtype=images.dtype)
@@ -114,6 +124,10 @@ class VisualizeCycleGanEvolution(tf.keras.callbacks.Callback):
 
 
 class AlternateTraining(tf.keras.callbacks.Callback):
+    """Alternates training between generators and discriminators every batch.
+
+    By alternating training,
+    """
     def on_train_batch_begin(self, batch, logs=None):
         gen_batch = (batch % 2 == 0)
         self.model.m_gen.trainable = self.model.p_gen.trainable = gen_batch

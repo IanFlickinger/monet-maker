@@ -1,12 +1,14 @@
+"""UNet Generator implementation
+
+Todo:
+    Restructure unet building to modular framework
+    Finish docstrings
+    Finish unit tests
+"""
 from typing import Tuple, Union
 
 import tensorflow as tf
 import tensorflow_addons as tfa
-
-
-# TODO: restructure unet building to modular framework
-# TODO: finish docstrings
-# TODO: write unit tests
 
 
 def Unet(

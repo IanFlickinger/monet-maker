@@ -1,4 +1,26 @@
-from typing import List, Tuple, Union
+"""Differentiable image augmentations
+
+Defines differentiable functions for augmenting images as introduced in
+"Differentiable Augmentation for Data-Efficient GAN Training" by Shengyu
+Zhao, Zhijian Liu, Ji Lin, Jun-Yan Zhu, and Song Han available at
+https://arxiv.org/pdf/2006.10738.
+
+Attributes:
+    AVAILABLE_AUGMENTATIONS (Tuple[str]): tuple of names for augmentation
+        procedures fully defined and tested. Each item of the tuple will
+        correspond to the name of a member function of the Augmentor class
+        which implements the augmentation in a differentiable manner.
+
+Todo:
+    Redesign cutout augmentation to allow multiple cutout sizes per batch
+     - would be easy with for loop... detrimental to GPU / TPU computation?
+    Redesign translation augmentation to be more efficient
+     - possible solution: register the gradient of the tensorflow roll function
+    Separate augmentation functionality from class to remove need for
+    instantiation.
+"""
+
+from typing import List, Tuple, Union, Iterable, Callable
 import tensorflow as tf
 
 AVAILABLE_AUGMENTATIONS = (
@@ -10,13 +32,33 @@ AVAILABLE_AUGMENTATIONS = (
     'translation',
 )
 
-# TODO: add docstrings
-
 
 class Augmentor(tf.keras.layers.Layer):
+    """Encapsulates augmentation process
+
+    Args:
+        augmentations (Union[str, Iterable[str]]): List of augmentations to be
+            implemented. Can either be provided as an iterable of augmentation
+            names, or as a comma-separated-value string. Defaults to
+            AVAILABLE_AUGMENTATIONS.
+        max_brightness_adjustment (float): Maximum brightness adjustment value.
+            Must be in range [0, 1]. Defaults to 0.5
+        max_saturation_adjustment (float): Maximum saturation adjustment value.
+            Must be in range [0, 1]. Defaults to 0.5
+        max_contrast_adjustment (float): Maximum contrast adjustment value.
+            Must be in range [0, 1]. Defaults to 0.5
+        max_color_adjustment (float): Maximum color adjustment value. Must be
+            in range [0, 1]. Defaults to 0.1
+        max_translation_adjustment (float): Maximum translation adjustment
+            value as fraction of image size. Must be in range [0, 1]. Defaults to 0.125
+        max_cutout_size (float): Maximum size of cutout as fraction of image
+            size. Must be in range [0, 1]. Defaults to 0.5
+    """
+    augmentations: List[Callable]
+
     def __init__(
             self,
-            augmentations: Union[str, List[str]] = AVAILABLE_AUGMENTATIONS,
+            augmentations: Union[str, Iterable[str]] = AVAILABLE_AUGMENTATIONS,
             max_brightness_adjustment: float = 0.5,
             max_saturation_adjustment: float = 0.5,
             max_contrast_adjustment: float = 0.5,
@@ -36,13 +78,14 @@ class Augmentor(tf.keras.layers.Layer):
 
         self.clip_values = clip_values
 
-        if type(augmentations) is str:
+        if isinstance(augmentations, str):
             augmentations = map(str.strip, augmentations.split(','))
 
-        self.augmentations = list()
-        for augmentation in augmentations:
-            if hasattr(self, augmentation):
-                self.augmentations.append(getattr(self, augmentation))
+        self.augmentations = [
+            getattr(self, augmentation)
+            for augmentation in augmentations
+            if hasattr(self, augmentation)
+        ]
 
     def call(self, *batches: tf.Tensor) -> Tuple[tf.Tensor]:
         images = tf.concat(batches, 0)
@@ -101,9 +144,6 @@ class Augmentor(tf.keras.layers.Layer):
         images = (images - avg_colors) * adjustment + avg_colors
         return images
 
-    # TODO: find a way to sample more than one cutout size per batch
-    # would be easy with for loop... detrimental to GPU / TPU computation?
-    # assumedly, these functions all use loops under the hood anyways
     def cutout(self, images: tf.Tensor) -> tf.Tensor:
         num_images = tf.shape(images)[0]
         image_size = tf.shape(images)[1:3]

@@ -1,9 +1,9 @@
-"""Contains PatchGAN implementation
+"""PatchGAN implementation
 
 This module contains the logic for building a tensorflow keras PatchGAN model.
 
 TODO:
-    - parameterize PatchGAN architecture by depth and receptive field
+    Parameterize PatchGAN architecture by depth and receptive field
 """
 
 from typing import Iterable

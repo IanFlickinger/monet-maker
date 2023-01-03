@@ -1,3 +1,8 @@
+"""Visualization module
+
+This module contains several functions which generate, display, and save
+images that depict progress or results of the CycleGAN training.
+"""
 import IPython
 import numpy as np
 from PIL import Image

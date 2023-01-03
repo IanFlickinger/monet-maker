@@ -1,4 +1,10 @@
-from typing import Callable, Iterable, Union, List, Tuple, Collection, TypeVar
+"""CycleGAN implementation and support functionality.
+
+Attributes:
+    LossFunction: Type alias for Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
+"""
+
+from typing import Callable, Iterable, Union, Tuple, Collection, TypeVar
 
 import tensorflow as tf
 
@@ -6,9 +12,6 @@ from . import diffaug
 
 LossFunction = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 T = TypeVar('T')
-
-
-# TODO: final docstrings
 
 
 def _ensure_collection(obj: Union[T, Collection[T]], min_length: int = 1) -> Collection[T]:
@@ -52,6 +55,18 @@ class OptimizerList(list):
 
 
 class MultiHeadLoss(tf.keras.losses.Loss):
+    """Aggregated loss
+
+    Contains multiple loss functions for a model with multiple outputs (heads).
+
+    Args:
+        loss_functions (Collection[LossFunction]): list of loss functions, each with signature
+            loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor.
+        weights (tf.Tensor): weights for the given loss functions. Must be of same length
+            as loss_functions
+        reduction (str): see tf.keras.losses.Loss for more information.
+        name (str): see tf.keras.losses.Loss for more information.
+    """
     def __init__(
             self,
             loss_functions: Collection[LossFunction],
@@ -59,16 +74,6 @@ class MultiHeadLoss(tf.keras.losses.Loss):
             reduction: str = tf.keras.losses.Reduction.SUM,
             name: str = None,
     ):
-        """
-
-        Args:
-            loss_functions (List[LossFunction]): list of loss functions, each with signature
-                loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor.
-            weights (tf.Tensor): weights for the given loss functions. Must be of same length
-                as loss_functions
-            reduction (str): see tf.keras.losses.Loss for more information.
-            name (str): see tf.keras.losses.Loss for more information.
-        """
         super().__init__(reduction, name)
         self.loss_functions = loss_functions
         self.weights = weights or tf.ones(len(loss_functions))
@@ -77,18 +82,25 @@ class MultiHeadLoss(tf.keras.losses.Loss):
                              f'MultiHeadLoss received {len(self.loss_functions)} loss functions and '
                              f'{len(self.weights)} weights.')
 
-    def call(self, y_true: tf.Tensor, y_pred: Tuple[tf.Tensor]):
-        """
+    def call(self, y_true: Union[tf.Tensor, Tuple[tf.Tensor]], y_pred: Tuple[tf.Tensor]):
+        """Calculate all losses
+
+        Calculate each loss using a shared ground truth tensor or a series of
+        ground truth tensors.
 
         Args:
-            y_true (tf.Tensor): ground truth values with shape = [batch_size, ...]
-            y_pred (Tuple[tf.Tensor]): tuple of predicted values from each head with shapes = [batch_size, ...]
+            y_true (Union[tf.Tensor, Tuple[tf.Tensor]]): ground truth values with
+                shape(s) = [batch_size, ...].
+            y_pred (Tuple[tf.Tensor]): tuple of predicted values from each head
+                with shapes = [batch_size, ...]. Should be supplied in order
+                matching initial loss_function order during instantiation.
 
         Returns:
             Tuple[tf.Tensor]: scalar tensors containing loss values for each head.
         """
         losses = []
-        for prediction, loss_function, weight in zip(y_pred, self.loss_functions, self.weights):
+        y_true = _ensure_collection(y_true, len(self.loss_functions))
+        for truth, prediction, loss_function, weight in zip(y_true, y_pred, self.loss_functions, self.weights):
             losses.append(loss_function(y_true, prediction) * weight)
         return tuple(losses)
 

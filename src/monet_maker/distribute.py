@@ -1,3 +1,12 @@
+"""Abstracts distributed computation in Kaggle environment
+
+Todo:
+    Evaluate alternative default strategy options
+     - MirroredStrategy on CPU?
+    Resolve issues which arise from multiple processing units
+    Evaluate purpose of distributed loss wrapper in a package environment
+"""
+
 from typing import Callable, Optional
 
 import tensorflow as tf
@@ -34,7 +43,6 @@ def build_strategy():
         return tf.distribute.MirroredStrategy()
 
     # fall back on CPU
-    # TODO: evaluate MirroredStrategy for cpu
     return tf.distribute.get_strategy()
 
 
@@ -52,7 +60,6 @@ def is_tpu(strategy):
     return isinstance(strategy, tf.distribute.TPUStrategy)
 
 
-# TODO: evaluate purpose of this function from a package standpoint
 def loss(
         loss_fn: Callable[[tf.Tensor, tf.Tensor], tf.Tensor],
         strategy: Optional[tf.distribute.Strategy] = None
